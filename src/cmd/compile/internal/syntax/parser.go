@@ -2314,6 +2314,20 @@ func (p *parser) forStmt() Stmt {
 	return s
 }
 
+func (p *parser) untilStmt() Stmt {
+	if trace {
+		defer p.trace("untilStmt")()
+	}
+
+	s := new(UntilStmt)
+	s.pos = p.pos()
+
+	s.Init, s.Cond, _ = p.header(_Until)
+	s.Body = p.blockStmt("until clause")
+
+	return s
+}
+
 func (p *parser) header(keyword token) (init SimpleStmt, cond Expr, post SimpleStmt) {
 	p.want(keyword)
 
@@ -2618,6 +2632,9 @@ func (p *parser) stmtOrNil() Stmt {
 
 	case _For:
 		return p.forStmt()
+
+	case _Until:
+		return p.untilStmt()
 
 	case _Switch:
 		return p.switchStmt()

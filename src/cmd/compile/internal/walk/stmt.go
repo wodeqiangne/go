@@ -126,6 +126,9 @@ func walkStmt(n ir.Node) ir.Node {
 	case ir.OFOR:
 		n := n.(*ir.ForStmt)
 		return walkFor(n)
+	case ir.OUNTIL:
+		n := n.(*ir.UntilStmt)
+		return walkUntil(n)
 
 	case ir.OIF:
 		n := n.(*ir.IfStmt)
@@ -189,6 +192,20 @@ func walkFor(n *ir.ForStmt) ir.Node {
 	n.Post = walkStmt(n.Post)
 	walkStmtList(n.Body)
 	return n
+}
+
+// walkFor walks an OFOR node.
+func walkUntil(n *ir.UntilStmt) ir.Node {
+	if n.Cond != nil {
+		init := ir.TakeInit(n.Cond)
+		walkStmtList(init)
+		n.Cond = walkExpr(n.Cond, &init)
+		n.Cond = ir.NewUnaryExpr(n.Pos(), ir.ONOT, n.Cond)
+		n.Cond = ir.InitExpr(init, n.Cond)
+	}
+
+	walkStmtList(n.Body)
+	return ir.NewForStmt(n.Pos(), nil, n.Cond, nil, n.Body, false)
 }
 
 // validGoDeferCall reports whether call is a valid call to appear in

@@ -1367,7 +1367,9 @@ func (w *writer) stmt1(stmt syntax.Stmt) {
 	case *syntax.ForStmt:
 		w.Code(stmtFor)
 		w.forStmt(stmt)
-
+	case *syntax.UntilStmt:
+		w.Code(stmtUntil)
+		w.untilStmt(stmt)
 	case *syntax.IfStmt:
 		w.Code(stmtIf)
 		w.ifStmt(stmt)
@@ -1554,13 +1556,30 @@ func (w *writer) forStmt(stmt *syntax.ForStmt) {
 	}
 
 	w.blockStmt(stmt.Body)
-	w.Bool(w.distinctVars(stmt))
+	w.Bool(w.distinctVars(stmt.Pos().Base()))
 	w.closeAnotherScope()
 }
 
-func (w *writer) distinctVars(stmt *syntax.ForStmt) bool {
+func (w *writer) untilStmt(stmt *syntax.UntilStmt) {
+	w.Sync(pkgbits.SyncUntilStmt)
+	w.openScope(stmt.Pos())
+
+	if stmt.Cond != nil && w.p.staticBool(&stmt.Cond) < 0 { // always false
+		stmt.Body.List = nil
+	}
+
+	w.pos(stmt)
+	w.stmt(stmt.Init)
+	w.optExpr(stmt.Cond)
+
+	w.blockStmt(stmt.Body)
+	w.Bool(w.distinctVars(stmt.Pos().Base()))
+	w.closeAnotherScope()
+}
+
+func (w *writer) distinctVars(posBase *syntax.PosBase) bool {
 	lv := base.Debug.LoopVar
-	fileVersion := w.p.info.FileVersions[stmt.Pos().Base()]
+	fileVersion := w.p.info.FileVersions[posBase]
 	is122 := fileVersion == "" || version.Compare(fileVersion, "go1.22") >= 0
 
 	// Turning off loopvar for 1.22 is only possible with loopvarhash=qn

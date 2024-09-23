@@ -28,6 +28,7 @@ const (
 	stmtFor
 	stmtSwitch
 	stmtSelect
+	stmtUntil
 )
 
 // A codeExpr distinguishes among expression encodings.
